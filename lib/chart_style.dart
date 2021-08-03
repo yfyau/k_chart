@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart' show Color;
 import 'package:k_chart/flutter_k_chart.dart';
 
@@ -184,7 +186,7 @@ class ResponsiveChartStyle extends ChartStyle {
           candleWidth: pointWidth * 0.8,
           candleLineWidth: pointWidth * 0.15,
           volWidth: pointWidth * 0.8,
-          macdWidth: pointWidth * 0.3,
+          macdWidth: pointWidth * 0.8,
           vCrossWidth: pointWidth * 0.8,
           hCrossWidth: hCrossWidth,
           nowPriceLineLength: nowPriceLineLength,
