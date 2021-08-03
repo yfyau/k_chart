@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart' show Color;
+import 'package:k_chart/flutter_k_chart.dart';
 
 class ChartColors {
   List<Color> bgColor = [Color(0xff18191d), Color(0xff18191d)];
@@ -66,46 +67,131 @@ class ChartColors {
 }
 
 class ChartStyle {
-  double topPadding = 30.0;
+  double topPadding;
 
-  double bottomPadding = 20.0;
+  double bottomPadding;
 
-  double childPadding = 12.0;
+  double childPadding;
 
   //点与点的距离
-  double pointWidth = 11.0;
+  double pointWidth;
 
   //蜡烛宽度
-  double candleWidth = 8.5;
+  double candleWidth;
 
   //蜡烛中间线的宽度
-  double candleLineWidth = 1.5;
+  double candleLineWidth;
 
   //vol柱子宽度
-  double volWidth = 8.5;
+  double volWidth;
 
   //macd柱子宽度
-  double macdWidth = 3.0;
+  double macdWidth;
 
   //垂直交叉线宽度
-  double vCrossWidth = 8.5;
+  double vCrossWidth;
 
   //水平交叉线宽度
-  double hCrossWidth = 0.5;
+  double hCrossWidth;
 
   //现在价格的线条长度
-  double nowPriceLineLength = 1;
+  double nowPriceLineLength;
 
   //现在价格的线条间隔
-  double nowPriceLineSpan = 1;
+  double nowPriceLineSpan;
 
   //现在价格的线条粗细
-  double nowPriceLineWidth = 1;
+  double nowPriceLineWidth;
 
-  int gridRows = 4;
+  int gridRows;
 
-  int gridColumns = 4;
+  int gridColumns;
 
   //下方時間客製化
   List<String>? dateTimeFormat;
+
+  ChartStyle({
+    this.topPadding = 30.0,
+    this.bottomPadding = 20.0,
+    this.childPadding = 12.0,
+    this.pointWidth = 11.0,
+    this.candleWidth = 8.5,
+    this.candleLineWidth = 1.5,
+    this.volWidth = 8.5,
+    this.macdWidth = 3.0,
+    this.vCrossWidth = 8.5,
+    this.hCrossWidth = 0.5,
+    this.nowPriceLineLength = 1,
+    this.nowPriceLineSpan = 1,
+    this.nowPriceLineWidth = 1,
+    this.gridRows = 4,
+    this.gridColumns = 4,
+    this.dateTimeFormat,
+  });
+}
+
+/// Responsive Chart Style will using [pointWidth] to calculate for other widths
+/// In the actual use case, [pointWidth] = screen width / datas.length in [IntradayChartWidget]
+/// Other params would be inherited
+class ResponsiveChartStyle extends ChartStyle {
+  /// Will be controlled inside the [IntradayChartWidget]
+  double pointWidth;
+
+  double topPadding;
+
+  double bottomPadding;
+
+  double childPadding;
+
+  //水平交叉线宽度
+  double hCrossWidth;
+
+  //现在价格的线条长度
+  double nowPriceLineLength;
+
+  //现在价格的线条间隔
+  double nowPriceLineSpan;
+
+  //现在价格的线条粗细
+  double nowPriceLineWidth;
+
+  int gridRows;
+
+  //Number of columns for Grid
+  //In IntradayChartWidget will force reset to 1
+  int gridColumns;
+
+  //下方時間客製化
+  List<String>? dateTimeFormat;
+
+  ResponsiveChartStyle({
+    this.pointWidth = 11.0,
+    this.topPadding = 30.0,
+    this.bottomPadding = 20.0,
+    this.childPadding = 12.0,
+    this.hCrossWidth = 0.5,
+    this.nowPriceLineLength = 1,
+    this.nowPriceLineSpan = 1,
+    this.nowPriceLineWidth = 1,
+    this.gridRows = 4,
+    this.gridColumns = 4,
+    this.dateTimeFormat,
+  }) : super(
+          topPadding: topPadding,
+          bottomPadding: bottomPadding,
+          childPadding: childPadding,
+          pointWidth: pointWidth,
+          candleWidth: pointWidth * 0.8,
+          candleLineWidth: pointWidth * 0.15,
+          volWidth: pointWidth * 0.8,
+          macdWidth: pointWidth * 0.3,
+          vCrossWidth: pointWidth * 0.8,
+          hCrossWidth: hCrossWidth,
+          nowPriceLineLength: nowPriceLineLength,
+          nowPriceLineSpan: nowPriceLineSpan,
+          nowPriceLineWidth: nowPriceLineWidth,
+          gridRows: gridRows,
+          gridColumns: gridColumns,
+          dateTimeFormat: dateTimeFormat,
+        );
 }
