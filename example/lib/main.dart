@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:example/hsMain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -126,6 +127,37 @@ class _MyHomePageState extends State<MyHomePage> {
                 child: const CircularProgressIndicator()),
         ]),
         buildButtons(),
+        Stack(children: <Widget>[
+          Container(
+            height: 450,
+            width: double.infinity,
+            child: IntradayChartWidget(
+              datas,
+              ResponsiveChartStyle(),
+              chartColors,
+              mainState: _mainState,
+              volHidden: _volHidden,
+              secondaryState: _secondaryState,
+              fixedLength: 2,
+              timeFormat: TimeFormat.YEAR_MONTH_DAY,
+              translations: kChartTranslations,
+              showNowPrice: _showNowPrice,
+              maDayList: [1, 100, 1000],
+              minLength: 730,
+              dayPoints: [
+                IntradayPoint('start', 0),
+                IntradayPoint('1year', 364),
+                IntradayPoint('2year', 729),
+              ],
+            ),
+          ),
+          if (showLoading)
+            Container(
+                width: double.infinity,
+                height: 450,
+                alignment: Alignment.center,
+                child: const CircularProgressIndicator()),
+        ]),
         if (_bids != null && _asks != null)
           Container(
             height: 230,
@@ -223,7 +255,7 @@ class _MyHomePageState extends State<MyHomePage> {
   //获取火币数据，需要翻墙
   Future<String> getIPAddress(String? period) async {
     var url =
-        'https://api.huobi.br.com/market/history/kline?period=${period ?? '1day'}&size=300&symbol=btcusdt';
+        'https://api.huobi.br.com/market/history/kline?period=${period ?? '1day'}&size=365&symbol=btcusdt';
     late String result;
     final response = await http.get(Uri.parse(url));
     if (response.statusCode == 200) {
