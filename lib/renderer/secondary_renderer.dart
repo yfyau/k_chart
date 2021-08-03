@@ -22,12 +22,13 @@ class SecondaryRenderer extends BaseChartRenderer<MACDEntity> {
       this.chartStyle,
       this.chartColors)
       : super(
-            chartRect: mainRect,
-            maxValue: maxValue,
-            minValue: minValue,
-            topPadding: topPadding,
-            fixedLength: fixedLength,
-            gridColor: chartColors.gridColor,) {
+          chartRect: mainRect,
+          maxValue: maxValue,
+          minValue: minValue,
+          topPadding: topPadding,
+          fixedLength: fixedLength,
+          gridColor: chartColors.gridColor,
+        ) {
     mMACDWidth = this.chartStyle.macdWidth;
   }
 
@@ -182,11 +183,20 @@ class SecondaryRenderer extends BaseChartRenderer<MACDEntity> {
         Offset(chartRect.width, chartRect.top), gridPaint);
     canvas.drawLine(Offset(0, chartRect.bottom),
         Offset(chartRect.width, chartRect.bottom), gridPaint);
-    double columnSpace = chartRect.width / gridColumns;
-    for (int i = 0; i <= columnSpace; i++) {
-      //mSecondaryRect垂直线
-      canvas.drawLine(Offset(columnSpace * i, chartRect.top - topPadding),
-          Offset(columnSpace * i, chartRect.bottom), gridPaint);
+
+    if (gridColumns > 0) {
+      double columnSpace = chartRect.width / gridColumns;
+      for (int i = 0; i <= columnSpace; i++) {
+        //mSecondaryRect垂直线
+        canvas.drawLine(Offset(columnSpace * i, chartRect.top - topPadding),
+            Offset(columnSpace * i, chartRect.bottom), gridPaint);
+      }
     }
+  }
+
+  @override
+  void drawVerticalLine(Canvas canvas, double x) {
+    canvas.drawLine(
+        Offset(x, topPadding / 3), Offset(x, chartRect.bottom), gridPaint);
   }
 }

@@ -5,25 +5,7 @@ import 'package:k_chart/chart_translations.dart';
 import 'package:k_chart/extension/map_ext.dart';
 import 'package:k_chart/flutter_k_chart.dart';
 
-enum MainState { MA, BOLL, NONE }
-enum SecondaryState { MACD, KDJ, RSI, WR, CCI, NONE }
-
-class TimeFormat {
-  static const List<String> YEAR_MONTH_DAY = [yyyy, '-', mm, '-', dd];
-  static const List<String> YEAR_MONTH_DAY_WITH_HOUR = [
-    yyyy,
-    '-',
-    mm,
-    '-',
-    dd,
-    ' ',
-    HH,
-    ':',
-    nn
-  ];
-}
-
-class KChartWidget extends StatefulWidget {
+class IntradayChartWidget extends StatefulWidget {
   final List<KLineEntity>? datas;
 
   final MainState mainState;
@@ -31,10 +13,7 @@ class KChartWidget extends StatefulWidget {
   final SecondaryState secondaryState;
   final Function()? onSecondaryTap;
 
-  final bool isLine;
   final bool hideGrid;
-  @Deprecated('Use `translations` instead.')
-  final bool isChinese;
   final bool showNowPrice;
   final bool showInfoDialog;
   final Map<String, ChartTranslations> translations;
@@ -43,19 +22,20 @@ class KChartWidget extends StatefulWidget {
   //当屏幕滚动到尽头会调用，真为拉到屏幕右侧尽头，假为拉到屏幕左侧尽头
   final Function(bool)? onLoadMore;
 
-  @Deprecated('Use `chartColors` instead.')
-  final List<Color>? bgColor;
   final int fixedLength;
   final List<int> maDayList;
-  final int flingTime;
-  final double flingRatio;
-  final Curve flingCurve;
-  final Function(bool)? isOnDrag;
 
   final ChartColors chartColors;
-  final ChartStyle chartStyle;
+  final ResponsiveChartStyle chartStyle;
 
-  KChartWidget(
+  //Minimum and Maximum number of data for Intraday display
+  final int minLength;
+  final int maxLength;
+
+  //Points to draw vertical line and text display
+  final List<IntradayPoint> dayPoints;
+
+  IntradayChartWidget(
     this.datas,
     this.chartStyle,
     this.chartColors, {
@@ -63,40 +43,31 @@ class KChartWidget extends StatefulWidget {
     this.secondaryState = SecondaryState.MACD,
     this.onSecondaryTap,
     this.volHidden = false,
-    this.isLine = false,
     this.hideGrid = false,
-    @Deprecated('Use `translations` instead.') this.isChinese = false,
     this.showNowPrice = true,
     this.showInfoDialog = true,
     this.translations = kChartTranslations,
     this.timeFormat = TimeFormat.YEAR_MONTH_DAY,
     this.onLoadMore,
-    @Deprecated('Use `chartColors` instead.') this.bgColor,
     this.fixedLength = 2,
     this.maDayList = const [5, 10, 20],
-    this.flingTime = 600,
-    this.flingRatio = 0.5,
-    this.flingCurve = Curves.decelerate,
-    this.isOnDrag,
+    this.minLength = 0,
+    this.maxLength = 10000000,
+    this.dayPoints = const [],
   });
 
   @override
-  _KChartWidgetState createState() => _KChartWidgetState();
+  _IntradayChartWidgetState createState() => _IntradayChartWidgetState();
 }
 
-class _KChartWidgetState extends State<KChartWidget>
+class _IntradayChartWidgetState extends State<IntradayChartWidget>
     with TickerProviderStateMixin {
-  double mScaleX = 1.0, mScrollX = 0.0, mSelectX = 0.0;
+  double mSelectX = 0.0;
   StreamController<InfoWindowEntity?>? mInfoWindowStream;
   double mHeight = 0, mWidth = 0;
   AnimationController? _controller;
   Animation<double>? aniX;
 
-  double getMinScrollX() {
-    return mScaleX;
-  }
-
-  double _lastScale = 1.0;
   bool isScale = false, isDrag = false, isLongPress = false;
 
   @override
@@ -120,8 +91,7 @@ class _KChartWidgetState extends State<KChartWidget>
   @override
   Widget build(BuildContext context) {
     if (widget.datas != null && widget.datas!.isEmpty) {
-      mScrollX = mSelectX = 0.0;
-      mScaleX = 1.0;
+      mSelectX = 0.0;
     }
 
     return LayoutBuilder(
@@ -129,24 +99,44 @@ class _KChartWidgetState extends State<KChartWidget>
         mHeight = constraints.maxHeight;
         mWidth = constraints.maxWidth;
 
-        final _painter = ChartPainter(
-          widget.chartStyle,
+        ChartStyle chartStyle = widget.chartStyle;
+
+        if (widget.datas != null) {
+          int length =
+              widget.datas!.length.clamp(widget.minLength, widget.maxLength);
+
+          /// Re-construct to init the values
+          chartStyle = ResponsiveChartStyle(
+            pointWidth: mWidth / length,
+            topPadding: chartStyle.topPadding,
+            bottomPadding: chartStyle.bottomPadding,
+            childPadding: chartStyle.childPadding,
+            hCrossWidth: chartStyle.hCrossWidth,
+            nowPriceLineLength: chartStyle.nowPriceLineLength,
+            nowPriceLineSpan: chartStyle.nowPriceLineSpan,
+            nowPriceLineWidth: chartStyle.nowPriceLineWidth,
+            gridRows: chartStyle.gridRows,
+            gridColumns: 0,
+            dateTimeFormat: chartStyle.dateTimeFormat,
+          );
+        }
+
+        final _painter = IntradayChartPainter(
+          chartStyle,
           widget.chartColors,
           datas: widget.datas,
-          scaleX: mScaleX,
-          scrollX: mScrollX,
           selectX: mSelectX,
           isLongPass: isLongPress,
           mainState: widget.mainState,
           volHidden: widget.volHidden,
           secondaryState: widget.secondaryState,
-          isLine: widget.isLine,
+          isLine: true,
           hideGrid: widget.hideGrid,
           showNowPrice: widget.showNowPrice,
           sink: mInfoWindowStream?.sink,
-          bgColor: widget.bgColor,
           fixedLength: widget.fixedLength,
           maDayList: widget.maDayList,
+          dayPoints: widget.dayPoints,
         );
 
         return GestureDetector(
@@ -155,34 +145,6 @@ class _KChartWidgetState extends State<KChartWidget>
                 _painter.isInSecondaryRect(details.localPosition)) {
               widget.onSecondaryTap!();
             }
-          },
-          onHorizontalDragDown: (details) {
-            _stopAnimation();
-            _onDragChanged(true);
-          },
-          onHorizontalDragUpdate: (details) {
-            if (isScale || isLongPress) return;
-            mScrollX = (details.primaryDelta! / mScaleX + mScrollX)
-                .clamp(0.0, ChartPainter.maxScrollX)
-                .toDouble();
-            notifyChanged();
-          },
-          onHorizontalDragEnd: (DragEndDetails details) {
-            var velocity = details.velocity.pixelsPerSecond.dx;
-            _onFling(velocity);
-          },
-          onHorizontalDragCancel: () => _onDragChanged(false),
-          onScaleStart: (_) {
-            isScale = true;
-          },
-          onScaleUpdate: (details) {
-            if (isDrag || isLongPress) return;
-            mScaleX = (_lastScale * details.scale).clamp(0.5, 2.2);
-            notifyChanged();
-          },
-          onScaleEnd: (_) {
-            isScale = false;
-            _lastScale = mScaleX;
           },
           onLongPressStart: (details) {
             isLongPress = true;
@@ -216,57 +178,6 @@ class _KChartWidgetState extends State<KChartWidget>
     );
   }
 
-  void _stopAnimation({bool needNotify = true}) {
-    if (_controller != null && _controller!.isAnimating) {
-      _controller!.stop();
-      _onDragChanged(false);
-      if (needNotify) {
-        notifyChanged();
-      }
-    }
-  }
-
-  void _onDragChanged(bool isOnDrag) {
-    isDrag = isOnDrag;
-    if (widget.isOnDrag != null) {
-      widget.isOnDrag!(isDrag);
-    }
-  }
-
-  void _onFling(double x) {
-    _controller = AnimationController(
-        duration: Duration(milliseconds: widget.flingTime), vsync: this);
-    aniX = null;
-    aniX = Tween<double>(begin: mScrollX, end: x * widget.flingRatio + mScrollX)
-        .animate(CurvedAnimation(
-            parent: _controller!.view, curve: widget.flingCurve));
-    aniX!.addListener(() {
-      mScrollX = aniX!.value;
-      if (mScrollX <= 0) {
-        mScrollX = 0;
-        if (widget.onLoadMore != null) {
-          widget.onLoadMore!(true);
-        }
-        _stopAnimation();
-      } else if (mScrollX >= ChartPainter.maxScrollX) {
-        mScrollX = ChartPainter.maxScrollX;
-        if (widget.onLoadMore != null) {
-          widget.onLoadMore!(false);
-        }
-        _stopAnimation();
-      }
-      notifyChanged();
-    });
-    aniX!.addStatusListener((status) {
-      if (status == AnimationStatus.completed ||
-          status == AnimationStatus.dismissed) {
-        _onDragChanged(false);
-        notifyChanged();
-      }
-    });
-    _controller!.forward();
-  }
-
   void notifyChanged() => setState(() {});
 
   late List<String> infos;
@@ -276,7 +187,6 @@ class _KChartWidgetState extends State<KChartWidget>
         stream: mInfoWindowStream?.stream,
         builder: (context, snapshot) {
           if (!isLongPress ||
-              widget.isLine == true ||
               !snapshot.hasData ||
               snapshot.data?.kLineEntity == null) return Container();
           KLineEntity entity = snapshot.data!.kLineEntity;
@@ -307,9 +217,7 @@ class _KChartWidgetState extends State<KChartWidget>
               itemExtent: 14.0,
               shrinkWrap: true,
               itemBuilder: (context, index) {
-                final translations = widget.isChinese
-                    ? kChartTranslations['zh_CN']!
-                    : widget.translations.of(context);
+                final translations = widget.translations.of(context);
 
                 return _buildItem(
                   infos[index],
@@ -325,8 +233,7 @@ class _KChartWidgetState extends State<KChartWidget>
     Color color = widget.chartColors.infoWindowNormalColor;
     if (info.startsWith("+"))
       color = widget.chartColors.infoWindowUpColor;
-    else if (info.startsWith("-"))
-      color = widget.chartColors.infoWindowDnColor;
+    else if (info.startsWith("-")) color = widget.chartColors.infoWindowDnColor;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
@@ -346,4 +253,17 @@ class _KChartWidgetState extends State<KChartWidget>
       DateTime.fromMillisecondsSinceEpoch(
           date ?? DateTime.now().millisecondsSinceEpoch),
       widget.timeFormat);
+}
+
+class IntradayPoint {
+  final String text;
+  final int index;
+
+  const IntradayPoint(this.text, this.index);
+
+  static const List<IntradayPoint> HKEX = [
+    const IntradayPoint('9:30', 0),
+    const IntradayPoint('13:00', 150),
+    const IntradayPoint('16:00', 329),
+  ];
 }

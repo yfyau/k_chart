@@ -1,6 +1,7 @@
 import 'dart:async' show StreamSink;
 
 import 'package:flutter/material.dart';
+import 'package:k_chart/intraday_chart_widget.dart';
 import 'package:k_chart/utils/number_util.dart';
 
 import '../entity/info_window_entity.dart';
@@ -12,7 +13,7 @@ import 'main_renderer.dart';
 import 'secondary_renderer.dart';
 import 'vol_renderer.dart';
 
-class ChartPainter extends BaseChartPainter {
+class IntradayChartPainter extends BaseChartPainter {
   static get maxScrollX => BaseChartPainter.maxScrollX;
   late BaseChartRenderer mMainRenderer;
   BaseChartRenderer? mVolRenderer, mSecondaryRenderer;
@@ -29,13 +30,12 @@ class ChartPainter extends BaseChartPainter {
   final ChartStyle chartStyle;
   final bool hideGrid;
   final bool showNowPrice;
+  final List<IntradayPoint> dayPoints;
 
-  ChartPainter(
+  IntradayChartPainter(
     this.chartStyle,
     this.chartColors, {
     required datas,
-    required scaleX,
-    required scrollX,
     required isLongPass,
     required selectX,
     mainState,
@@ -48,11 +48,12 @@ class ChartPainter extends BaseChartPainter {
     this.bgColor,
     this.fixedLength = 2,
     this.maDayList = const [5, 10, 20],
+    this.dayPoints = const [],
   })  : assert(bgColor == null || bgColor.length >= 2),
         super(chartStyle,
             datas: datas,
-            scaleX: scaleX,
-            scrollX: scrollX,
+            scaleX: 1.0,
+            scrollX: 0.0,
             isLongPress: isLongPass,
             selectX: selectX,
             mainState: mainState,
@@ -148,6 +149,28 @@ class ChartPainter extends BaseChartPainter {
       mMainRenderer.drawGrid(canvas, mGridRows, mGridColumns);
       mVolRenderer?.drawGrid(canvas, mGridRows, mGridColumns);
       mSecondaryRenderer?.drawGrid(canvas, mGridRows, mGridColumns);
+
+      for (IntradayPoint p in dayPoints) {
+        double pointX = getX(p.index);
+
+        mMainRenderer.drawVerticalLine(canvas, pointX);
+        mVolRenderer?.drawVerticalLine(canvas, pointX);
+        mSecondaryRenderer?.drawVerticalLine(canvas, pointX);
+
+        TextPainter tp = getTextPainter(p.text, null);
+
+        double textY =
+            size.height - (mBottomPadding - tp.height) / 2 - tp.height;
+        double textX = pointX - tp.width / 2;
+
+        // Skip draw if it places out of the canvas too much
+        if (pointX < 0 || pointX > size.width)  continue;
+
+        // Prevent date text out of canvas
+        if (textX < 0) textX = 0;
+        if (textX > size.width - tp.width) textX = size.width - tp.width;
+        tp.paint(canvas, Offset(textX, textY));
+      }
     }
   }
 
@@ -267,7 +290,8 @@ class ChartPainter extends BaseChartPainter {
       tp.paint(canvas, Offset(x + w1 + w2, y - textHeight / 2));
     }
 
-    TextPainter dateTp = getTextPainter(getDate(point.time), chartColors.crossTextColor);
+    TextPainter dateTp =
+        getTextPainter(getDate(point.time), chartColors.crossTextColor);
     textWidth = dateTp.width;
     r = textHeight / 2;
     x = translateXtoX(getX(index));
@@ -315,11 +339,13 @@ class ChartPainter extends BaseChartPainter {
     if (x < mWidth / 2) {
       //画右边
       TextPainter tp = getTextPainter(
-          "── " + mMainLowMinValue.toStringAsFixed(fixedLength), chartColors.minColor);
+          "── " + mMainLowMinValue.toStringAsFixed(fixedLength),
+          chartColors.minColor);
       tp.paint(canvas, Offset(x, y - tp.height / 2));
     } else {
       TextPainter tp = getTextPainter(
-          mMainLowMinValue.toStringAsFixed(fixedLength) + " ──", chartColors.minColor);
+          mMainLowMinValue.toStringAsFixed(fixedLength) + " ──",
+          chartColors.minColor);
       tp.paint(canvas, Offset(x - tp.width, y - tp.height / 2));
     }
     x = translateXtoX(getX(mMainMaxIndex));
@@ -327,11 +353,13 @@ class ChartPainter extends BaseChartPainter {
     if (x < mWidth / 2) {
       //画右边
       TextPainter tp = getTextPainter(
-          "── " + mMainHighMaxValue.toStringAsFixed(fixedLength), chartColors.maxColor);
+          "── " + mMainHighMaxValue.toStringAsFixed(fixedLength),
+          chartColors.maxColor);
       tp.paint(canvas, Offset(x, y - tp.height / 2));
     } else {
       TextPainter tp = getTextPainter(
-          mMainHighMaxValue.toStringAsFixed(fixedLength) + " ──", chartColors.maxColor);
+          mMainHighMaxValue.toStringAsFixed(fixedLength) + " ──",
+          chartColors.maxColor);
       tp.paint(canvas, Offset(x - tp.width, y - tp.height / 2));
     }
   }

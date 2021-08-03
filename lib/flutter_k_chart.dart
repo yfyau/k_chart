@@ -1,5 +1,6 @@
 library flutter_k_chart;
 
+export 'intraday_chart_widget.dart'; //布局
 export 'k_chart_widget.dart'; //布局
 export 'chart_style.dart';
 export 'depth_chart.dart';

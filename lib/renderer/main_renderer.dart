@@ -251,16 +251,27 @@ class MainRenderer extends BaseChartRenderer<CandleEntity> {
   @override
   void drawGrid(Canvas canvas, int gridRows, int gridColumns) {
 //    final int gridRows = 4, gridColumns = 4;
-    double rowSpace = chartRect.height / gridRows;
-    for (int i = 0; i <= gridRows; i++) {
-      canvas.drawLine(Offset(0, rowSpace * i + topPadding),
-          Offset(chartRect.width, rowSpace * i + topPadding), gridPaint);
+    if (gridRows > 0) {
+      double rowSpace = chartRect.height / gridRows;
+      for (int i = 0; i <= gridRows; i++) {
+        canvas.drawLine(Offset(0, rowSpace * i + topPadding),
+            Offset(chartRect.width, rowSpace * i + topPadding), gridPaint);
+      }
     }
-    double columnSpace = chartRect.width / gridColumns;
-    for (int i = 0; i <= columnSpace; i++) {
-      canvas.drawLine(Offset(columnSpace * i, topPadding / 3),
-          Offset(columnSpace * i, chartRect.bottom), gridPaint);
+
+    if (gridColumns > 0) {
+      double columnSpace = chartRect.width / gridColumns;
+      for (int i = 0; i <= columnSpace; i++) {
+        canvas.drawLine(Offset(columnSpace * i, topPadding / 3),
+            Offset(columnSpace * i, chartRect.bottom), gridPaint);
+      }
     }
+  }
+
+  @override
+  void drawVerticalLine(Canvas canvas, double x) {
+    canvas.drawLine(
+        Offset(x, topPadding / 3), Offset(x, chartRect.bottom), gridPaint);
   }
 
   @override

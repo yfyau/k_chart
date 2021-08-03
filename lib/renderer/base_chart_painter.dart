@@ -105,7 +105,7 @@ abstract class BaseChartPainter extends CustomPainter {
     canvas.save();
     canvas.scale(1, 1);
     drawBg(canvas, size);
-    drawGrid(canvas);
+    drawGrid(canvas, size);
     if (datas != null && datas!.isNotEmpty) {
       drawChart(canvas, size);
       drawRightText(canvas);
@@ -129,7 +129,7 @@ abstract class BaseChartPainter extends CustomPainter {
   void drawBg(Canvas canvas, Size size);
 
   //画网格
-  void drawGrid(canvas);
+  void drawGrid(Canvas canvas, Size size);
 
   //画图表
   void drawChart(Canvas canvas, Size size);
